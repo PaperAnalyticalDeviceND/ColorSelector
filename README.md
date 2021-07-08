@@ -1,5 +1,7 @@
 # ColorSelector
-Image segmentation for the FHI project
+Image segmentation for the FHI project. Works with this R project to generate PLSR coefficients https://github.com/sortijas/PAD .
+
+The coefficients are used to predict the drug concentration and is also implemented in the Android app at https://github.com/PaperAnalyticalDeviceND/PADS_Lite .
 
 #### Running the scripts
 Running ```python3 regionRoutine.py``` generates a csv file contaning the RGB values for each region of each lane. 
@@ -10,7 +12,7 @@ Format
 16895	16895	albendazole	20	53232	225	216	190	225	148	161	240	100	135	234	228	219	228	225	214	226	223	211	223	220	207	224	219	209	246	241	231	236	231	219	235	226	168	234	225	164	232	224	173	238	229	182	237	230	188	235	229	191	240	233	198	229	223	193	232	226	205	235	230	211	169	213	223	191	214	213	190	206	199	201	217	209	194	211	202	200	218	209	179	198	189	190	211	203	210	225	218	236	238	222	250	206	199	241	184	185	240	183	182	240	185	184	243	194	189	242	196	191	247	210	199	242	205	194	131	183	195	158	198	197	213	119	131	226	150	153	221	160	158	229	177	171	228	187	171	233	196	181	226	193	174	235	207	191	227	217	197	234	221	203	159	216	220	115	206	218	108	205	216	109	204	207	132	210	208	141	208	204	237	235	217	236	231	214	248	243	224	243	240	219	241	203	0	241	207	0	237	209	14	236	212	20	209	175	3	203	186	58	226	218	144	237	228	193	236	226	200	235	228	203	208	170	81	214	174	80	225	203	134	202	181	104	195	181	116	213	208	162	227	220	174	231	222	182	239	230	197	248	240	214	215	196	142	244	240	220	239	236	221	219	221	206	208	238	225	181	226	215	169	225	215	230	229	211	239	236	214	237	229	203	255	254	219	252	250	235	247	247	232	235	231	214	242	167	23	234	164	24	237	162	18	231	156	27	222	167	73	217	174	91	241	202	101	249	241	196	240	235	199	242	236	200	242	235	194	241	234	193	239	214	171	238	204	160	231	202	161	238	214	169	237	234	198	242	237	212	239	234	208	244	239	213	228	221	194	213	211	183	225	219	197	224	220	192	253	245	221	248	239	213																																																																																																																																																																																																																																																																																																																																																																												
 ```
 
-It requires an input file (sample card-10.csv) that contains information on the cards to be frocessed. This is a dump from the pad.crc.nd.edu website with format,
+It requires an input file (sample card-10.csv) that contains information on the cards to be processed. This is a dump from the pad.crc.nd.edu website with format,
 ```
 16895,albendazole,,,,,,/images/padimages/email/processed/53232.processed.png,,,,,,,,,,53232,20
 ```
@@ -19,3 +21,4 @@ It requires an input file (sample card-10.csv) that contains information on the 
 1. ```regionRoutine.py```, the main python script.
 1. ```intensityFind.py```, finds the most intense pixels in the defined region.
 1. ```pixelProcessing.py```, takes an average of the selected pixel RGB values.
+1. ```pls_generate_app_coeff_csv.py```, script to take the R PLS coefficients for each drug and create a single csv file.
