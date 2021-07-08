@@ -17,6 +17,11 @@ It requires an input file (sample card-10.csv) that contains information on the 
 16895,albendazole,,,,,,/images/padimages/email/processed/53232.processed.png,,,,,,,,,,53232,20
 ```
 
+We can generate this with SQL,
+```
+SELECT * FROM `card` WHERE `category`='FHI2020'
+```
+
 #### Files
 1. ```regionRoutine.py```, the main python script.
 1. ```intensityFind.py```, finds the most intense pixels in the defined region.
