@@ -1,5 +1,5 @@
 # ColorSelector
-Image segmentation for the FHI project. Works with this R project to generate PLSR coefficients https://github.com/sortijas/PAD .
+Image segmentation for the FHI project. Works with this R project to generate PLSR coefficients https://github.com/sortijas/PAD . Original FHI360 work used ```/FHI360/10_reg_rgb_full.csv``` as the input file to R.
 
 The coefficients are used to predict the drug concentration and is also implemented in the Android app at https://github.com/PaperAnalyticalDeviceND/PADS_Lite .
 
