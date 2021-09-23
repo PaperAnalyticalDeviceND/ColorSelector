@@ -17,6 +17,7 @@ import regionRoutine
 url = 'http://pad.crc.nd.edu'
 dest = './temp.png'
 coefficients_file = "PLS_COEFS_LAST_10_REG_RGB_FULL.csv" #"pls_coefficients.csv"
+# PLS_COEFS_FIRST_10_REG_RGB_FULL.csv, PLS_COEFS_LAST_10_REG_RGB_FULL.csv, PLS_COEFS_MID_10_REG_RGB_FULL.csv
 output_file = 'conc.csv'
 pad_card_list_file = "FHIwPics.csv"
 
@@ -26,6 +27,7 @@ pad_card_list_file = "FHIwPics.csv"
 #img = cv.imread('../cards/40314.png')
 #cv.imshow("img", img)
 #cv.waitKey()
+
 
 f = {}
 
@@ -68,12 +70,19 @@ with open(output_file,'w') as myFile:
         # start with offst
         concentration = drug_coeff[0]
 
-        coeff_index = 1;
+        coeff_index = 1
 
-        for f_elt in f:
-          #print(f[f_elt])
-          concentration += float(f[f_elt]) * drug_coeff[coeff_index]
-          coeff_index += 1
+        for letter in ['A','B','C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
+          for region in range(10):
+            for color_letter in ['R', 'G', 'B']:
+              pixval = f[letter + str(region + 1) + '-' + color_letter]
+              concentration += float(pixval) * drug_coeff[coeff_index]
+              coeff_index += 1
+
+        # for f_elt in f:
+        #   #print(f_elt)
+        #   concentration += float(f[f_elt]) * drug_coeff[coeff_index]
+        #   coeff_index += 1
 
         print("Drug/Concentration:",drug, concentration, row[10])
         myFile.write(row[0] + ',' + row[1] + ',' + drug + ',' + str(float(int(concentration))) + ',' + row[10] + '\n')
