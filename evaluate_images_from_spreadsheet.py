@@ -16,7 +16,7 @@ import regionRoutine
 # defines
 url = 'http://pad.crc.nd.edu'
 dest = './temp.png'
-coefficients_file = "pls_coefficients.csv"
+coefficients_file = "PLS_COEFS_LAST_10_REG_RGB_FULL.csv" #"pls_coefficients.csv"
 output_file = 'conc.csv'
 pad_card_list_file = "FHIwPics.csv"
 
@@ -33,11 +33,16 @@ f = {}
 coeff = {}
 with open(coefficients_file) as csvcoeffs:
   csvcoeffreader = csv.reader(csvcoeffs)
+  i=0
   for row in csvcoeffreader:
     elmts = []
-    for j in range(1,len(row) - 1):
+    for j in range(1,len(row)):
       elmts.append(float(row[j]))
     coeff[row[0]] = elmts
+    # if i==0:
+    #   print(row)
+    #   i = 1
+    #   print(len(elmts),elmts)
 
 with open(output_file,'w') as myFile:
 
@@ -60,17 +65,18 @@ with open(output_file,'w') as myFile:
         drug = row[9]
         drug_coeff = coeff[drug]
 
-        concentration = 0.0
+        # start with offst
+        concentration = drug_coeff[0]
 
-        coeff_index = 0;
+        coeff_index = 1;
 
         for f_elt in f:
           #print(f[f_elt])
           concentration += float(f[f_elt]) * drug_coeff[coeff_index]
           coeff_index += 1
 
-        print("Drug/Concentration:",drug,concentration, row[10])
-        myFile.write(row[0] + ',' + row[1] + ',' + drug + ',' + str(float(int(concentration)) / 100) + ',' + row[10] + '\n')
+        print("Drug/Concentration:",drug, concentration, row[10])
+        myFile.write(row[0] + ',' + row[1] + ',' + drug + ',' + str(float(int(concentration))) + ',' + row[10] + '\n')
 
       except Exception as e:
         print("Error",e, row[5],row[9])

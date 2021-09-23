@@ -3,7 +3,7 @@ import csv
 
 start = 'PLS_COEFS_'
 end = '_10_REG_RGB_FULL'
-tag = 'LAST'
+tag = 'LAST' # can be FIRST, MID or LAST
 
 with open(start + tag + end + '.csv', "w", newline='') as f:
     writer = csv.writer(f, delimiter=',')
