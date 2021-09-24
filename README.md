@@ -36,3 +36,4 @@ where the first column is the drug label, the second the intercpt and the remain
 1. ```pixelProcessing.py```, takes an average of the selected pixel RGB values.
 1. ```pls_generate_app_coeff_csv.py```, script to take the R PLS coefficients for each drug and create a single csv file.
 2. ```construct_colorselector_input.py```, script to generate input file for regionRoutine, extracts from PAD database.
+3. ```evaluate_images_from_spreadsheet.py```, takes a list of pads and image locations (```FHIwPics.csv```) and combined PLS coefficients (```pls_coefficients.csv```) and calculates concentrations and saves to ```conc.csv```.
