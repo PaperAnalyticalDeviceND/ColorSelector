@@ -29,6 +29,7 @@ def findMaxIntensitiesFiltered(img):
   maxSet = []
   centerX = imgS.shape[0]/2
   centerY = imgS.shape[1]/2
+  #print("centers x/y", centerX, centerY)
   for i in range(imgS.shape[0]):
     dX = abs(centerX-i)
     for j in range(imgS.shape[1]):
@@ -38,11 +39,13 @@ def findMaxIntensitiesFiltered(img):
       cV = sF*imgV[i,j]
       if cS <= BLACK_THRESH_S and cV <= BLACK_THRESH_V:
         pass
-      elif cS > maxI:
-        maxI = imgS[i,j]
-        maxSet = [(i,j)]
-      elif cS == maxI:
+      else:
         maxSet.append((i,j))
+      # elif cS > maxI:
+      #   maxI = imgS[i,j]
+      #   maxSet = [(i,j)]
+      # elif cS == maxI:
+      #   maxSet.append((i,j))
   return maxSet
 
 #Takes a distance from a center and returns a weight between 0 and 1

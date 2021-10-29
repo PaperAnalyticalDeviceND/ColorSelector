@@ -18,7 +18,7 @@ def avgPixels(pixels, img):
     totalB /= len(pixels)
     totalG /= len(pixels)
     totalR /= len(pixels)
-  return totalR, totalG, totalB
+  return int(totalR + 0.5), int(totalG + 0.5), int(totalB + 0.5)
 
 #Takes a list of pixels and a BGR image and returns the average
 # HSV pixel values
@@ -58,4 +58,4 @@ def avgPixelsLAB(pixels, img):
     totalL /= len(pixels)
     totalA /= len(pixels)
     totalB /= len(pixels)
-  return totalL, totalA, totalB
+  return int(totalL + 0.5), int(totalA + 0.5), int(totalB + 0.5)
