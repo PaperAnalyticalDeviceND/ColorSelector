@@ -37,3 +37,6 @@ where the first column is the drug label, the second the intercpt and the remain
 1. ```pls_generate_app_coeff_csv.py```, script to take the R PLS coefficients for each drug and create a single csv file.
 2. ```construct_colorselector_input.py```, script to generate input file for regionRoutine, extracts from PAD database.
 3. ```evaluate_images_from_spreadsheet.py```, takes a list of pads and image locations (```FHIwPics.csv```) and combined PLS coefficients (```pls_coefficients.csv```) and calculates concentrations and saves to ```conc.csv```.
+4. ```nn_evaluate_images_from_spreadsheet.py```, takes a list of pads and image locations (```FHIwPics.csv```) and combined PLS coefficients (```pls_coefficients.csv```) and calculates concentrations for both PLS and NN (```model_file = '/var/www/html/joomla/neuralnetworks/tf_lite/fhi360_conc_large_lite/1.0/fhi360_conc_large_1_21.tflite'```) and saves to ```conc.csv```.
+5. ```fix_notes.py```, converts interim notes with PLS etc. and converts to JSON.
+6. ```fix_blind_to_correct.py```, fixes the `card` table to have the correct sample/quantity from `double_blind` table.
