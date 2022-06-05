@@ -84,6 +84,7 @@ class pad_neural_network:
             #print("input", input_details[0], output_details) #["shape"], HEIGHT_INPUT)
         except Exception as e:
             print("Error",e, "loading model", model_file)
+            return -1.
 
 
     def catagorize(self, im_file):
@@ -119,5 +120,5 @@ class pad_neural_network:
 
         except Exception as e:
             print("Error",e, "catagorizing image", im_file)
-            return "", -1
+            return "", -1.
 
