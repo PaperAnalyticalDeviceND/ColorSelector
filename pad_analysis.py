@@ -61,6 +61,7 @@ class pls:
             return pls_concentration
         except Exception as e:
             print("Error",e, "pls analyzing image", in_file, "with", drug)
+            return -1.
 
 #### NN version of concentration
 class pad_neural_network:
@@ -84,7 +85,6 @@ class pad_neural_network:
             #print("input", input_details[0], output_details) #["shape"], HEIGHT_INPUT)
         except Exception as e:
             print("Error",e, "loading model", model_file)
-            return -1.
 
 
     def catagorize(self, im_file):
