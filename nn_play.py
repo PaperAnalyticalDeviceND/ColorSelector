@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from urllib.parse import DefragResultBytes
 import MySQLdb
 from PIL import Image, ImageEnhance, ImageStat
 import json
@@ -12,206 +13,129 @@ from zipfile import ZipFile
 import regionRoutine
 import cv2 as cv
 import csv
+import pad_analysis
+
+# grab image other defines
+url = 'http://pad.crc.nd.edu'
+dest = './temp.png'
+
+output_file = 'accuracy_conc_1b.csv'
+
+# drug labels
+cat_labels = ['Albendazole','Amoxicillin','Ampicillin','Azithromycin','Benzyl','Penicillin','Ceftriaxone','Chloroquine','Ciprofloxacin','Doxycycline','Epinephrine','Ethambutol','Ferrous,Sulfate','Hydroxychloroquine','Isoniazid','Promethazine','Hydrochloride','Pyrazinamide','Rifampicin','RIPE','Sulfamethoxazole','Tetracycline','Distractor']
 
 # set lite model
 cat_model_file = '/var/www/html/joomla/neuralnetworks/tf_lite/fhi360_small_lite/1.0/fhi360_small_1_21.tflite'
 conc_model_file = '/var/www/html/joomla/neuralnetworks/tf_lite/fhi360_conc_large_lite/1.0/fhi360_conc_large_1_21.tflite'
 
-# cat_labels = ['Albendazole','Amoxicillin','Ampicillin','Azithromycin','Benzyl','Penicillin','Ceftriaxone','Chloroquine','Ciprofloxacin','Doxycycline','Epinephrine','Ethambutol','Ferrous,Sulfate','Hydroxychloroquine','Isoniazid','Promethazine','Hydrochloride','Pyrazinamide','Rifampicin','RIPE','Sulfamethoxazole','Tetracycline','Distractor']
-# conc_labels = [100,80,50,20]
-
 # pls
 coefficients_file = "/var/www/html/joomla/neuralnetworks/pls/fhi360_concentration/1.0/pls_fhi360_conc_coefficients.csv"
 
-#### Load PLS coefficients
-def get_pls_coeff(coefficients_file):
-    coeff = {}
-    with open(coefficients_file) as csvcoeffs:
-        csvcoeffreader = csv.reader(csvcoeffs)
-        #i=0
-        for row in csvcoeffreader:
-            elmts = []
-            for j in range(1,len(row)):
-                elmts.append(float(row[j]))
-            coeff[row[0]] = elmts
-    return coeff
+# create cat nn
+cat_nn = pad_analysis.pad_neural_network(cat_model_file)
 
-#### PLS version of concentration
-def get_pls_quantity(file_url, coeff, drug):
-    # grab image from server
-    urllib.request.urlretrieve(url + file_url, dest)
+# create conc nn
+conc_nn = pad_analysis.pad_neural_network(conc_model_file)
 
-    img = cv.imread(dest)
-    #print("OK",row[5],row[9])
-        # get pixel analysis
-    f = {}
-    f = regionRoutine.fullRoutine(img, regionRoutine.intFind.findMaxIntensitiesFiltered, f, True, 10)
+# creat pls
+pls_conc = pad_analysis.pls(coefficients_file)
 
-    # drug?
-    # continue if no coefficients
-    if drug not in coeff:
-        return 0.
+# setup query
+QUERY1 = 'SELECT `sample_name`,`processed_file_location`,`quantity`,`id`,`sample_id`  FROM `card` WHERE `category`="FHI2022"' # AND `notes` LIKE "%Predicted drug = %" AND `notes` NOT LIKE "%Notes version%"'
+# AND `notes` LIKE "%(pls%" 
 
-    drug_coeff = coeff[drug] #coeff['amoxicillin'] #
+#get database credentials
+with open('credentials.txt') as f:
+    line = f.readline()
+    split = line.split(",")
+f.close()
 
-    # start with offst
-    pls_concentration = drug_coeff[0]
+#open database
+db = MySQLdb.connect(host="localhost", # your host, usually localhost
+                     user=split[0], # your username
+                      passwd=split[1], # your password
+                      db="pad") # name of the data base
 
-    coeff_index = 1
+# you must create a Cursor object. It will let
+#  you execute all the queries you need
+cur = db.cursor()
 
-    for letter in ['A','B','C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']:
-        for region in range(10):
-            for color_letter in ['R', 'G', 'B']:
-                pixval = f[letter + str(region + 1) + '-' + color_letter]
-                pls_concentration += float(pixval) * drug_coeff[coeff_index]
-                coeff_index += 1
+# get list of samples
+cur.execute(QUERY1)
 
-    return pls_concentration
+# setup for loop
+drug_correct = {}
+drug_total = {}
 
-#### NN version of concentration
-def get_nn_quantity(file_url, model_file):
-    # fixed pads data
-    url = 'http://pad.crc.nd.edu'
-    dest = './temp.png'
+for drug in cat_labels:
+    drug_correct[drug.lower()] = 0
+    drug_total[drug.lower()] = 0
 
-    # grab image from server
-    urllib.request.urlretrieve(url + file_url, dest)
+# drug_correct['distractor'] = 0
+# drug_total['distractor'] = 0
 
-    # Load png file using the PIL library
-    img = PIL.Image.open(dest)
+count = 0
 
-    #crop out active area
-    img = img.crop((71, 359, 71+636, 359+490))
- 
-    # Load the TFLite model and allocate tensors.
-    interpreter =  tf.contrib.lite.Interpreter(model_path=model_file)
-    interpreter.allocate_tensors()
+doBreak = True
 
-    # Get input and output tensors.
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    HEIGHT_INPUT, WIDTH_INPUT, DEPTH = input_details[0]["shape"][1:]
-    print("input", input_details[0], output_details) #["shape"], HEIGHT_INPUT)
+# loop through CSV
+with open(output_file,'w') as myFile:
+    # loop
+    for row in cur.fetchall() :
+        #print(row[0])
+        count += 1
 
-    # resize
-    img = img.resize((HEIGHT_INPUT,WIDTH_INPUT), PIL.Image.ANTIALIAS)
+        # increment Drugs
+        if row[0].lower() in drug_correct:
+            drug_total[row[0].lower()] += 1
+        else:
+            continue
+            #drug_total['distractor'] += 1
 
-    #reshape the image as numpy
-    im = np.asarray(img).flatten().reshape(1, HEIGHT_INPUT, WIDTH_INPUT, DEPTH).astype(np.float32)
+        # grab image from server
+        urllib.request.urlretrieve(url + row[1], dest)
 
-    #print("shape/type:", im.shape, im.dtype)
-    # input_shape = input_details[0]['shape']
-    # input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
-    interpreter.set_tensor(input_details[0]['index'], im)
+        # do analysis
+        pred_drug, conf = cat_nn.catagorize(dest)
+        #print("NN", row[0], pred_drug, conf,)
 
-    # predict
-    interpreter.invoke()
+        if row[0].lower() == pred_drug.lower():
+            if row[0].lower() in drug_correct:
+                drug_correct[row[0].lower()] += 1
+            # else:
+            #     drug_correct['distractor'] += 1
 
-    # The function `get_tensor()` returns a copy of the tensor data.
-    # Use `tensor()` in order to get a pointer to the tensor.
-    output_data = interpreter.get_tensor(output_details[0]['index'])
+        nn_concentration, conc_conf = conc_nn.catagorize(dest)
 
-    # get labels
-    with ZipFile(model_file, 'r') as zipObject:
-        zipObject.extract("labels.txt", './')
-        with open("labels.txt") as f:
-            labels = f.readlines()
-    #print("disp",labels)
+        pls_concentration = pls_conc.quantity(dest, pred_drug)
+        print(count,"NN cat", row[0], pred_drug, conf,"PLS", pls_concentration, "NN conc", nn_concentration, "Db", row[2])
 
-    concentration = labels[np.argmax(output_data[0])]
-    confidence = output_data[0][np.argmax(output_data[0])]
+        # save info
+        myFile.write(str(row[4]) + ',' + str(row[3]) + ',' + row[0] + ',' + pred_drug + ',' + str(conf) + ',' + str(row[2]) + ',' + str(nn_concentration) + ',' + str(pls_concentration) + '\n')
 
- 
-    return concentration[:-1], float(confidence)
+        # if count > 10:
+        #     break
 
-# get coeff file for pls
-coeff = get_pls_coeff(coefficients_file)
+# calculate ratios
+drug_ratio = {}
 
-# do analysis
-print(get_nn_quantity("/var/www/html/joomla/images/padimages/api/processed/Ampicillin-12LanePADKenya2015-1-132184838.processed.png", cat_model_file))
+for drug in cat_labels:
+    if drug_total[drug.lower()] != 0:
+        drug_ratio[drug.lower()] = float(drug_correct[drug.lower()]) / float(drug_total[drug.lower()])
+    else:
+        drug_ratio[drug.lower()] = 0.
 
-# # setup query
-# QUERY1 = 'SELECT `sample_id`,`notes`,`id`,`processed_file_location` FROM `card` WHERE `category`="FHI2022" AND `notes` LIKE "%Predicted drug = %" AND `notes` NOT LIKE "%Notes version%"'
-# # AND `notes` LIKE "%(pls%" 
+# if drug_total['distractor'] != 0:
+#     drug_ratio['distractor'] = float(drug_correct['distractor']) / float(drug_total['distractor'])
+# else:
+#     drug_ratio['distractor'] = 0.
 
-# #get database credentials
-# with open('credentials.txt') as f:
-#     line = f.readline()
-#     split = line.split(",")
-# f.close()
+print("Count",count, drug_ratio)
+print(drug_correct, drug_total)
 
-# #open database
-# db = MySQLdb.connect(host="localhost", # your host, usually localhost
-#                      user=split[0], # your username
-#                       passwd=split[1], # your password
-#                       db="pad") # name of the data base
+myFile.close()
 
-# # you must create a Cursor object. It will let
-# #  you execute all the queries you need
-# cur = db.cursor()
-
-# # get list of samples
-# cur.execute(QUERY1)
-
-# count = 0
-
-# doBreak = True
-
-# # loop through CSV
-# # loop
-# for row in cur.fetchall() :
-#     #print(row[1])
-#     count += 1
-#     notes_split = row[1].split(',')
-#     pred = notes_split[0][17:].split('(')
-#     pred_drug = pred[0].strip()
-#     pred_conf = pred[1][:-1]
-#     quant = notes_split[1].strip()
-#     quant_nn = notes_split[2].strip()[:-1]
-#     quant_pls = notes_split[3][5:-2]
-#     #print("4", notes_split[4])
-#     #print("5", notes_split[5])
-#     if quant_pls != "":
-#         other = notes_split[5].split('.')
-#     else:
-#         other = notes_split[4].split('.')
-#     safe = other[0].strip()[10:]
-#     user = (other[1].strip())[6:]
-#     nn = (other[2].strip())[12:]
-
-#     #print(pred_drug, pred_conf, quant, quant_nn, quant_pls, safe, user, nn)
-#     json_string = {}
-#     json_string["Predicted drug"] = pred_drug
-#     json_string["User"] = user
-#     json_string["App type"] = "Android"
-#     if quant_nn !="":
-#         json_string["Quantity NN"] = float(quant_nn)
-#     else:
-#         json_string["Quantity NN"] = get_nn_quantity(row[3])
-#     json_string["Prediction score"] = float(pred_conf)
-#     if quant_pls != "":
-#         json_string["Quantity PLS"] = float(quant_pls)
-#     else:
-#         json_string["Quantity PLS"] = round(get_pls_quantity(row[3], coeff, pred_drug.lower()), 1)
-#     json_string["Notes version"] = 0
-#     json_string["Neural net"] = nn
-#     json_string["Notes"] = ""
-
-#     QUERY1 =  'UPDATE `card` SET `notes` = \'%s\' WHERE `id`=%s' % \
-#             (json.dumps(json_string), row[2])
-
-#     print(QUERY1)
-
-#     #cur.execute(QUERY1)
-
-#     # commit your changes
-#     #db.commit()
-#     #break
-
-    
-# print("Count",count)
-
-# # Close all cursors
-# cur.close()
-# # Close all databases
-# db.close()
+# Close all cursors
+cur.close()
+# Close all databases
+db.close()
