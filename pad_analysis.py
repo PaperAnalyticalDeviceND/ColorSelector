@@ -113,13 +113,15 @@ class pad_neural_network:
             # The function `get_tensor()` returns a copy of the tensor data.
             # Use `tensor()` in order to get a pointer to the tensor.
             output_data = self.interpreter.get_tensor(self.output_details[0]['index'])
-
             concentration = self.labels[np.argmax(output_data[0])]
 
             # softmax
-            exps = np.exp(output_data[0])
-            exps = exps/np.sum(exps)
-            confidence = exps[np.argmax(output_data[0])]
+            if np.sum(output_data[0]) < 0.99 or np.sum(output_data[0]) > 1.01:
+                exps = np.exp(output_data[0])
+                exps = exps/np.sum(exps)
+                confidence = exps[np.argmax(output_data[0])]
+            else: # alreasy softmax
+                confidence = output_data[0][np.argmax(output_data[0])]
 
             return concentration[:-1], float(confidence)
 
