@@ -12,6 +12,7 @@ from zipfile import ZipFile
 import regionRoutine
 import cv2 as cv
 import csv
+import math
 
 #### PLS version of concentration
 class pls:
@@ -82,7 +83,7 @@ class pad_neural_network:
             self.input_details = self.interpreter.get_input_details()
             self.output_details = self.interpreter.get_output_details()
             self.HEIGHT_INPUT, self.WIDTH_INPUT, self.DEPTH = self.input_details[0]["shape"][1:]
-            #print("input", input_details[0], output_details) #["shape"], HEIGHT_INPUT)
+            #print("input", self.input_details[0], self.output_details) #["shape"], HEIGHT_INPUT)
         except Exception as e:
             print("Error",e, "loading model", model_file)
 
@@ -114,7 +115,11 @@ class pad_neural_network:
             output_data = self.interpreter.get_tensor(self.output_details[0]['index'])
 
             concentration = self.labels[np.argmax(output_data[0])]
-            confidence = output_data[0][np.argmax(output_data[0])]
+
+            # softmax
+            exps = np.exp(output_data[0])
+            exps = exps/np.sum(exps)
+            confidence = exps[np.argmax(output_data[0])]
 
             return concentration[:-1], float(confidence)
 
